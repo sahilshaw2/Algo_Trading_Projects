@@ -1,0 +1,38 @@
+import yfinance as yf
+import pandas as pd
+
+symbol = "AAPL"
+data = yf.download(symbol, start="2020-01-01", end="2023-01-01")
+
+data['EMA_50'] = data['Close'].ewm(span=50, adjust=False).mean()
+data['EMA_100'] = data['Close'].ewm(span=100, adjust=False).mean()
+data['EMA_200'] = data['Close'].ewm(span=200, adjust=False).mean()
+
+data['Signal'] = 0
+data['Position'] = None
+
+data.loc[data['EMA_50'] > data['EMA_100'], 'Signal'] = 1
+data.loc[data['EMA_50'] < data['EMA_100'], 'Signal'] = -1
+
+data.loc[data['EMA_50'] > data['EMA_200'], 'Signal'] = 2
+data.loc[data['EMA_50'] < data['EMA_200'], 'Signal'] = -2
+
+capital = 100000
+position = 0
+
+for index, row in data.iterrows():
+    if row['Signal'] == 1:
+        position += capital * 0.2
+        capital -= capital * 0.2
+    elif row['Signal'] == -1:
+        capital += position
+        position = 0
+    elif row['Signal'] == 2:
+        position += capital * 0.35
+        capital -= capital * 0.35
+    elif row['Signal'] == -2:
+        capital += position
+        position = 0
+
+print("Final Capital:", capital)
+print("Final Position:", position)
